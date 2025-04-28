@@ -1,20 +1,25 @@
 # Google Sheets - Project Tracker
 
-This Google Sheets Apps Script helps your team track the entire project lifecycle and manage checklists for individual tasks.
+This Google Sheets *Apps Script* helps your team track the entire project lifecycle and manage checklists for individual tasks. 
+It does not adhere to any particular Project Management doctrine. 
+
+It is meant for *teams who just want to do stuff*.
 
 ## Features
+| Feature                     | Description                                                                                             |
+| :-------------------------- | :------------------------------------------------------------------------------------------------------ |
+| **Requirements Management** | Track requirements with hierarchical IDs, descriptions, types, and priorities                           |
+| **Cross-Cutting Concerns**  | Manage aspects that affect multiple requirements (security aspects, API variants, etc)                  |
+| **Flexible concerns application** | Allow injection of cross-cutting concerns freely without constraints, across individual requirements or any group of requirement, manually or via a dedicated Concerns Picker UI |
+| **Automatic Checklist Generation** | Create comprehensive checklists combining requirements and concerns                                     |
+| **Team Assignment**         | Assign tasks to team members from a configurable team roster                                            |
+| **Task Status Workflow**    | Track items through design, development, testing, and shipping phases                                   |
+| **Hierarchical Structure**  | Automatically propagate concerns from parent to child requirements                                      |
+| **Completion Stats**  | Automatically calculate and update completion percentages                                               |
+| **Visual Progress Tracking**| Color-coded completion percentages show project progress at a glance                                    |
+| **State Persistence**       | Maintain assignment and completion status when regenerating checklists                                  |
+| **Data Validation**         | Enforce consistent data entry with dropdown menus and checkboxes                                        |
 
-- **Requirements Management**: Track requirements with hierarchical IDs, descriptions, types, and priorities
-- **Cross-Cutting Concerns**: Manage aspects that affect multiple requirements (security aspects, API variants, etc)
-- **Flexible concerns application**: Allow injection of cross-cutting concerns freely without constraints, across individual requirements or any group of requirement via a dedicated Concerns Picker UI
-- **Automatic Checklist Generation**: Create comprehensive checklists combining requirements and concerns
-- **Team Assignment**: Assign tasks to team members from a configurable team roster
-- **Task Status Workflow**: Track items through design, development, testing, and shipping phases
-- **Hierarchical Structure**: Automatically propagate concerns from parent to child requirements
-- **Completion Calculation**: Automatically calculate and update completion percentages
-- **Visual Progress Tracking**: Color-coded completion percentages show project progress at a glance
-- **State Persistence**: Maintain assignment and completion status  when regenerating checklists
-- **Data Validation**: Enforce consistent data entry with dropdown menus and checkboxes
 
 ## Install
 
@@ -184,7 +189,7 @@ All ***done*** items are accounted in the requirement percentage completion stat
 
 # Configuration
 
-!The `Config` sheet is normally hidden. It hosts project-wide configuration options. It can be accessed by revealing it via `View` → `Hidden sheets` → `Show Config`:
+The `Config` sheet is normally hidden. It hosts project-wide configuration options. It can be accessed by revealing it via `View` → `Hidden sheets` → `Show Config`:
 
 ![Access the Config sheet](images/settings_00.png)
 
