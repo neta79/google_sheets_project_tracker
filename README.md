@@ -1,9 +1,10 @@
 # Google Sheets - Project Tracker
 
 This Google Sheets *Apps Script* helps your team track the entire project lifecycle and manage checklists for individual tasks. 
-It does not adhere to any particular Project Management doctrine. 
 
-It is meant for *teams who just want to do stuff*.
+It *does not* adhere to any particular Project Management doctrine or dogmatic discipline.
+
+Meant for Project Managers who have their egos in check, and teams who just want to do stuff.
 
 ## Features
 | Feature                     | Description                                                                                             |
@@ -74,7 +75,7 @@ There will also be three new sheets added to the document:
 
 ## Listing requirements
 
-Every Project Management methodology that aims to—at the very least—avoid driving people insane makes some attempt to break down complex projects into sub-problems or requirements. These can each be further decomposed into sub-requirements, and so on. There's no explicit limit to how deep this itemization can go but let's assume the threshold is reached when the sub-requirements start to look a lot like a one-man/one-session tasks.
+Every Project Management methodology that aims to—at the very least—avoid driving people insane makes some attempt to break down complex projects into sub-problems or requirements. These can each be further decomposed into sub-requirements, and so on. There's no explicit limit to how deep this itemization can go but let's assume the threshold is reached when the sub-requirements start to look a lot like a one-person/one-session tasks.
 
 Each requirement must have an ID which adopts a hierarchical naming convention using dots for level separation.
 
