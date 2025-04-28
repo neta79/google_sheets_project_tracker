@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 16px;
+        font-size: 14px;
+      }
+      h2 {
+        margin-bottom: 15px;
+        color: #333;
+      }
+      .concern-list {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 20px;
+      }
+      .concern-item {
+        padding: 8px 4px;
+        border-bottom: 1px solid #eee;
+      }
+      .concern-item:last-child {
+        border-bottom: none;
+      }
+      .concern-checkbox {
+        margin-right: 10px;
+      }
+      .concern-id {
+        font-weight: bold;
+        color: #444;
+        display: inline-block;
+        width: 100px;
+        font-size: 13px;
+      }
+      .concern-desc {
+        font-size: 13px;
+      }
+      .button-container {
+        text-align: right;
+        margin-top: 20px;
+      }
+      button {
+        padding: 8px 15px;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      .summary {
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #1a73e8;
+      }
+      .no-concerns {
+        color: #999;
+        font-style: italic;
+        padding: 15px 0;
+      }
+      .checkbox-legend {
+        margin: 10px 0;
+        padding: 8px;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .legend-item {
+        display: inline-block;
+        margin-right: 15px;
+      }
+      .indeterminate-example {
+        position: relative;
+      }
+      .indeterminate-example:after {
+        content: '';
+        position: absolute;
+        left: 4px;
+        top: 4px;
+        width: 6px;
+        height: 6px;
+        background-color: #666;
+      }
+      .select-actions {
+        margin: 10px 0;
+      }
+      .select-button {
+        font-size: 12px;
+        padding: 4px 8px;
+        margin-right: 8px;
+        background-color: #f1f1f1;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="summary">
+      <?= selectedRowCount ?> requirement<?= selectedRowCount > 1 ? 's' : '' ?> selected
+    </div>
+    
+    <div class="select-actions">
+      <button class="select-button" onclick="selectAll()">Check All</button>
+      <button class="select-button" onclick="deselectAll()">Uncheck All</button>
+      <button class="select-button" onclick="resetToMixed()">Reset</button>
+    </div>
+    
+    <div class="button-container">
+      <button onclick="cancel()">Cancel</button>
+      <button onclick="applyChanges()">Apply</button>
+    </div>
+    
+    <div class="concern-list">
+      <? if (concerns && concerns.length > 0) { ?>
+        <? for (var i = 0; i < concerns.length; i++) { ?>
+          <div class="concern-item">
+            <input 
+              type="checkbox" 
+              id="concern-<?= i ?>" 
+              class="concern-checkbox" 
+              value="<?= concerns[i].id ?>" 
+              data-original-state="<?= checkboxStates[concerns[i].id] ?>"
+              <?= checkboxStates[concerns[i].id] === 'checked' ? 'checked' : '' ?>
+            >
+            <span class="concern-id"><?= concerns[i].id ?></span>
+            <span class="concern-desc"><?= concerns[i].description ?></span>
+          </div>
+        <? } ?>
+      <? } else { ?>
+        <div class="no-concerns">No concerns available. Please add concerns to the Cross-Cutting Concerns sheet first.</div>
+      <? } ?>
+    </div>
+    
+    <div class="button-container">
+      <button onclick="cancel()">Cancel</button>
+      <button onclick="applyChanges()">Apply</button>
+    </div>
+    
+    <script>
+      // Set indeterminate state for checkboxes that need it
+      window.onload = function() {
+        const checkboxes = document.querySelectorAll('.concern-checkbox');
+        checkboxes.forEach(checkbox => {
+          if (checkbox.dataset.originalState === 'indeterminate') {
+            checkbox.indeterminate = true;
+          }
+        });
+      };
+      
+      function selectAll() {
+        const checkboxes = document.querySelectorAll('.concern-checkbox');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = true;
+          checkbox.indeterminate = false;
+        });
+      }
+      
+      function deselectAll() {
+        const checkboxes = document.querySelectorAll('.concern-checkbox');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = false;
+          checkbox.indeterminate = false;
+        });
+      }
+      
+      function resetToMixed() {
+        const checkboxes = document.querySelectorAll('.concern-checkbox');
+        checkboxes.forEach(checkbox => {
+          const originalState = checkbox.dataset.originalState;
+          
+          if (originalState === 'checked') {
+            checkbox.checked = true;
+            checkbox.indeterminate = false;
+          } else if (originalState === 'unchecked') {
+            checkbox.checked = false;
+            checkbox.indeterminate = false;
+          } else if (originalState === 'indeterminate') {
+            checkbox.indeterminate = true;
+            checkbox.checked = false;
+          }
+        });
+      }
+      
+      function applyChanges() {
+        const concernStates = {};
+        const checkboxes = document.querySelectorAll('.concern-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+          const concernId = checkbox.value;
+          let state;
+          
+          if (checkbox.indeterminate) {
+            state = 'indeterminate';
+          } else if (checkbox.checked) {
+            state = 'checked';
+          } else {
+            state = 'unchecked';
+          }
+          
+          concernStates[concernId] = state;
+        });
+        
+        // Build the row map for each requirement
+        const reqRows = {};
+        <? for (var i = 0; i < selectedReqIds.length; i++) { ?>
+          reqRows['<?= selectedReqIds[i] ?>'] = <?= reqRows[selectedReqIds[i]] ?>;
+        <? } ?>
+        
+        // Disable buttons while processing to prevent multiple clicks
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => button.disabled = true);
+        
+        google.script.run
+          .withSuccessHandler(function(result) {
+            closeDialog(result);
+          })
+          .withFailureHandler(function(error) {
+            handleError(error);
+            // Re-enable buttons if there's an error
+            buttons.forEach(button => button.disabled = false);
+          })
+          .updateConcerns(reqRows, concernStates);
+      }
+      
+      function cancel() {
+        google.script.host.close();
+      }
+      
+      function closeDialog(success) {
+        if (success) {
+          google.script.host.close();
+        } else {
+          alert('Failed to update concerns. Please try again.');
+          // Re-enable buttons
+          const buttons = document.querySelectorAll('button');
+          buttons.forEach(button => button.disabled = false);
+        }
+      }
+      
+      function handleError(error) {
+        console.error('Error:', error);
+        alert('Error: ' + (error.message || 'Unknown error occurred'));
+      }
+      
+      // Toggle indeterminate state when clicking a checkbox
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('concern-checkbox')) {
+          // Remove indeterminate state when clicking
+          e.target.indeterminate = false;
+        }
+      });
+    </script>
+  </body>
+</html>
