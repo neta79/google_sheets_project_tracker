@@ -78,18 +78,25 @@ function setupSheets() {
   let reqSheet = ss.getSheetByName(SHEETS.REQUIREMENTS);
   if (!reqSheet) {
     reqSheet = ss.insertSheet(SHEETS.REQUIREMENTS);
-    reqSheet.getRange('A1:G1').setValues([['ID', 'Requirement Description', 'Item Type', 'Priority', 'Sources', '%', 'Concerns']]);
-    reqSheet.getRange('A1:G1').setFontWeight('bold');
+    reqSheet.getRange('A1:H1').setValues([['ID', 'Requirement Description', 'Item Type', 'Priority', 'Sources', 'Assigned to', '%', 'Concerns']]);
+    reqSheet.getRange('A1:H1').setFontWeight('bold');
     reqSheet.setFrozenRows(1);
 
-    // Hide the Concerns column (column G, index 7)
-    reqSheet.hideColumns(7);
+    // Hide the Concerns column (column H, index 8)
+    reqSheet.hideColumns(8);
     
     // Add data validation for the item type column
     const itemTypeRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(Object.values(ITEM_TYPES), true)
       .build();
     reqSheet.getRange('C2:C1000').setDataValidation(itemTypeRule);
+    
+    // Add data validation for the assigned to column
+    const projectTeam = getProjectTeam();
+    const assignedToRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([''].concat(projectTeam), true)
+      .build();
+    reqSheet.getRange('F2:F1000').setDataValidation(assignedToRule);
   }
   
   // Create Cross-Cutting Concerns sheet if it doesn't exist
@@ -105,7 +112,7 @@ function setupSheets() {
   let checklistSheet = ss.getSheetByName(SHEETS.CHECKLIST);
   if (!checklistSheet) {
     checklistSheet = ss.insertSheet(SHEETS.CHECKLIST);
-    checklistSheet.getRange('A1:J1').setValues([['Item ID', 'Requirement ID', 'Requirement Description', 'Item Type', 'Parent Requirement', 'Concern ID', 'Concern Description', 'Assigned to', 'Status', 'Test OK']]);
+    checklistSheet.getRange('A1:J1').setValues([['Item ID', 'Assigned to', 'Status', 'Test OK', 'Item Type', 'Requirement Description', 'CCC Description', 'Requirement ID', 'CCC ID', 'Parent Requirement']]);
     checklistSheet.getRange('A1:J1').setFontWeight('bold');
     checklistSheet.setFrozenRows(1);
   }
@@ -173,9 +180,9 @@ function setupSheets() {
     .build();
   
   const lastRow = Math.max(checklistSheet.getLastRow(), 2);
-  checklistSheet.getRange(2, 8, 1000).setDataValidation(assignedToRule);
-  checklistSheet.getRange(2, 9, 1000).setDataValidation(statusRule);
-  checklistSheet.getRange(2, 10, 1000).setDataValidation(checkboxRule);
+  checklistSheet.getRange(2, 2, 1000).setDataValidation(assignedToRule); // Assigned to is now column 2
+  checklistSheet.getRange(2, 3, 1000).setDataValidation(statusRule);     // Status is now column 3
+  checklistSheet.getRange(2, 4, 1000).setDataValidation(checkboxRule);   // Test OK is now column 4
   
   setUpTriggers();
   
@@ -224,13 +231,13 @@ function onEdit(e) {
     
     // If editing the checklist status, test OK, or assigned to column
     if (sheetName === SHEETS.CHECKLIST && 
-        (e.range.getColumn() === 8 || e.range.getColumn() === 9 || e.range.getColumn() === 10)) {
+        (e.range.getColumn() === 2 || e.range.getColumn() === 3 || e.range.getColumn() === 4)) {
       const itemId = sheet.getRange(e.range.getRow(), 1).getValue();
       
       if (itemId) {
-        const assignedTo = sheet.getRange(e.range.getRow(), 8).getValue();
-        const status = sheet.getRange(e.range.getRow(), 9).getValue();
-        const testOk = sheet.getRange(e.range.getRow(), 10).getValue();
+        const assignedTo = sheet.getRange(e.range.getRow(), 2).getValue();
+        const status = sheet.getRange(e.range.getRow(), 3).getValue();
+        const testOk = sheet.getRange(e.range.getRow(), 4).getValue();
         
         console.log(`Change detected for Item ${itemId}: Assigned to=${assignedTo}, Status=${status}, TestOK=${testOk}`);
         
@@ -265,9 +272,9 @@ function updateCompletionAfterStatusChange() {
       if (checklistData[i][0]) {
         checklistItems.push({
           itemId: checklistData[i][0],
-          reqId: checklistData[i][1],
-          status: checklistData[i][8],
-          testOk: checklistData[i][9] || false
+          reqId: checklistData[i][7],
+          status: checklistData[i][2],
+          testOk: checklistData[i][3] || false
         });
       }
     }
@@ -604,9 +611,9 @@ function saveAllState() {
     const stateMap = {};
     for (let i = 1; i < checklistData.length; i++) {
       const itemId = checklistData[i][0];
-      const assignedTo = checklistData[i][7] || '';
-      const status = checklistData[i][8] || '';
-      const testOk = Boolean(checklistData[i][9]);
+      const assignedTo = checklistData[i][1] || '';
+      const status = checklistData[i][2] || '';
+      const testOk = Boolean(checklistData[i][3]);
       
       // Only save items that have at least one meaningful attribute set
       if (itemId && (assignedTo || status || testOk)) {
@@ -705,7 +712,7 @@ function generateChecklist() {
     restoreState(checklistItems, stateData);
     
     // Write to checklist sheet
-    writeChecklistToSheet(checklistItems);
+    writeChecklistToSheet(checklistItems); 
     
     // Calculate completion percentages and update the Requirements sheet
     calculateCompletionPercentages(reqData, checklistItems);
@@ -747,6 +754,7 @@ function generateChecklistItems(reqData, concernsData) {
   // Find headers for columns
   const reqHeaders = reqData[0];
   const concernsColIndex = reqHeaders.indexOf('Concerns');
+  const assignedToColIndex = reqHeaders.indexOf('Assigned to');
   
   // Process requirements (skip header row)
   for (let i = 1; i < reqData.length; i++) {
@@ -756,6 +764,7 @@ function generateChecklistItems(reqData, concernsData) {
       itemType: reqData[i][2] || '',
       priority: reqData[i][3],
       sources: reqData[i][4] || '',
+      assignedTo: assignedToColIndex >= 0 ? reqData[i][assignedToColIndex] || '' : '',
       concerns: concernsColIndex >= 0 ? getConcernIDS(reqData[i][concernsColIndex] || '').map(c => c.trim()).filter(c => c) : []
     };
     
@@ -807,7 +816,7 @@ function generateChecklistItems(reqData, concernsData) {
       parentReq: parentDesc,
       concernId: '',
       concernDesc: '',
-      assignedTo: '',
+      assignedTo: req.assignedTo || '',
       status: '',
       testOk: false
     });
@@ -827,7 +836,7 @@ function generateChecklistItems(reqData, concernsData) {
           parentReq: parentDesc,
           concernId: concern.id,
           concernDesc: concern.description,
-          assignedTo: '',
+          assignedTo: req.assignedTo || '',
           status: '',
           testOk: false
         });
@@ -930,7 +939,7 @@ function writeChecklistToSheet(checklistItems) {
   
   // Set header if not present
   if (checklistSheet.getRange('A1').getValue() !== 'Item ID') {
-    checklistSheet.getRange('A1:J1').setValues([['Item ID', 'Requirement ID', 'Requirement Description', 'Item Type', 'Parent Requirement', 'Concern ID', 'Concern Description', 'Assigned to', 'Status', 'Test OK']]);
+    checklistSheet.getRange('A1:J1').setValues([['Item ID', 'Assigned to', 'Status', 'Test OK', 'Item Type', 'Requirement Description', 'CCC Description', 'Requirement ID', 'CCC ID', 'Parent Requirement']]);
     checklistSheet.getRange('A1:J1').setFontWeight('bold');
     checklistSheet.setFrozenRows(1);
   }
@@ -953,26 +962,26 @@ function writeChecklistToSheet(checklistItems) {
     .requireCheckbox()
     .build();
   
-  // Prepare data for writing
+  // Prepare data for writing - reordered columns
   const data = checklistItems.map(item => [
-    item.itemId,
-    item.reqId,
-    item.reqDesc,
-    item.itemType,
-    item.parentReq,
-    item.concernId,
-    item.concernDesc,
-    item.assignedTo,
-    item.status,
-    item.testOk || false
+    item.itemId,       // Column 1: Item ID
+    item.assignedTo,   // Column 2: Assigned to
+    item.status,       // Column 3: Status
+    item.testOk || false, // Column 4: Test OK 
+    item.itemType,     // Column 5: Item Type
+    item.reqDesc,      // Column 6: Requirement Description
+    item.concernDesc,  // Column 7: CCC Description
+    item.reqId,        // Column 8: Requirement ID
+    item.concernId,    // Column 9: CCC ID
+    item.parentReq     // Column 10: Parent Requirement
   ]);
   
   // Write data
   if (data.length > 0) {
     checklistSheet.getRange(2, 1, data.length, 10).setValues(data);
-    checklistSheet.getRange(2, 8, data.length, 1).setDataValidation(assignedToRule);
-    checklistSheet.getRange(2, 9, data.length, 1).setDataValidation(statusRule);
-    checklistSheet.getRange(2, 10, data.length, 1).setDataValidation(checkboxRule);
+    checklistSheet.getRange(2, 2, data.length, 1).setDataValidation(assignedToRule); // Assigned to is column 2
+    checklistSheet.getRange(2, 3, data.length, 1).setDataValidation(statusRule);     // Status is column 3
+    checklistSheet.getRange(2, 4, data.length, 1).setDataValidation(checkboxRule);   // Test OK is column 4
   }
   
   // Format and optimize
